@@ -1,4 +1,4 @@
-package com.koenidv.tbocrypto
+package com.koenidv.tbocrypto.data
 
 object Keys {
     init {

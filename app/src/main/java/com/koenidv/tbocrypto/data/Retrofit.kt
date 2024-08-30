@@ -1,6 +1,5 @@
 package com.koenidv.tbocrypto.data
 
-import com.koenidv.tbocrypto.Keys
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

@@ -25,12 +25,37 @@ class CryptoScreenViewModel : ViewModel() {
     )
     val uiState: StateFlow<CryptoScreenUiState> = _uiState.asStateFlow()
 
+    fun fetchAll(updateLoadingState: Boolean = true): Boolean {
+        var fetchedAnything = false
+        if (
+            _uiState.value.currentPrice !is PriceState.Error
+            || (_uiState.value.currentPrice as PriceState.Error).retryAllowed
+        ) {
+            fetchCurrentPrice(
+                _uiState.value.selectedCoinId,
+                updateLoadingState
+            )
+            fetchedAnything = true
+        }
+        if (
+            _uiState.value.historicData !is PriceState.Error
+            || (_uiState.value.historicData as PriceState.Error).retryAllowed
+        ) {
+            fetchHistoricData(
+                _uiState.value.selectedCoinId,
+                updateLoadingState = updateLoadingState
+            )
+            fetchedAnything = true
+        }
+        return fetchedAnything
+    }
+
     /**
      * Fetches the price of the currently selected coin
      * side effect: updates the uiState
      */
     fun fetchCurrentPrice() {
-        fetchCurrentPrice(_uiState.value.selectedCoinId)
+        fetchCurrentPrice(_uiState.value.selectedCoinId, true)
     }
 
     /**
@@ -38,10 +63,10 @@ class CryptoScreenViewModel : ViewModel() {
      * side effect: updates the uiState
      * @param coinId the id of the coin
      */
-    private fun fetchCurrentPrice(coinId: String) {
+    private fun fetchCurrentPrice(coinId: String, updateLoadingState: Boolean) {
         viewModelScope.launch {
             try {
-                _uiState.update { curr ->
+                if (updateLoadingState) _uiState.update { curr ->
                     curr.copy(currentPrice = PriceState.Loading)
                 }
                 api.getCurrentPrice(coinId).getOrElse(coinId) {
@@ -81,7 +106,7 @@ class CryptoScreenViewModel : ViewModel() {
      * side effect: updates the uiState
      */
     fun fetchHistoricData() {
-        fetchHistoricData(_uiState.value.selectedCoinId)
+        fetchHistoricData(_uiState.value.selectedCoinId, updateLoadingState = true)
     }
 
     /**
@@ -90,10 +115,10 @@ class CryptoScreenViewModel : ViewModel() {
      * @param coinId the id of the coin
      * @param days the number of days to look back: default 14
      */
-    private fun fetchHistoricData(coinId: String, days: Int = 14) {
+    private fun fetchHistoricData(coinId: String, days: Int = 14, updateLoadingState: Boolean) {
         viewModelScope.launch {
             try {
-                _uiState.update { curr ->
+                if (updateLoadingState) _uiState.update { curr ->
                     curr.copy(historicData = PriceState.Loading)
                 }
                 val data = api.getHistoricData(coinId, days)
@@ -129,8 +154,18 @@ class CryptoScreenViewModel : ViewModel() {
     }
 
     init {
-        fetchCurrentPrice()
-        fetchHistoricData()
+        fetchAll()
+        startCoroutineTimer()
+    }
+
+    private fun startCoroutineTimer(delayMillis: Long = 60000) {
+        viewModelScope.launch {
+            var fetchedAnythingLastRun = true
+            while (fetchedAnythingLastRun) {
+                fetchedAnythingLastRun = fetchAll(updateLoadingState = false)
+                kotlinx.coroutines.delay(delayMillis)
+            }
+        }
     }
 
 }

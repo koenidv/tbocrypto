@@ -16,6 +16,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.koenidv.tbocrypto.R
 import com.koenidv.tbocrypto.data.CurrentPrice
+import com.koenidv.tbocrypto.ui.components.LazyTable
+import com.koenidv.tbocrypto.util.formatPrice
 
 @Composable
 fun CryptoScreen(modifier: Modifier = Modifier) {
@@ -32,7 +34,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             )
         }
         when (val historicDataState = state.historicData) {
-            is PriceState.Success -> HistoricalCoinData(historicDataState.value.prices)
+            is PriceState.Success -> HistoricalCoinData(historicDataState.value.prices.sortedBy { it.timestamp })
             is PriceState.Loading -> LoadingIndicator()
             is PriceState.Error -> ErrorMessage(
                 historicDataState.message,
@@ -50,7 +52,7 @@ fun CurrentCoinPrice(price: CurrentPrice) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            "%.2f".format(price.eur).trimEnd('0').trimEnd('.', ','),
+            formatPrice(price.eur),
             style = MaterialTheme.typography.displayMedium
         )
     }
@@ -62,7 +64,12 @@ fun HistoricalCoinData(prices: List<CurrentPrice>) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.Center
     ) {
-        Text(prices.toString())
+        LazyTable(prices.map {
+            listOf(
+                it.timestamp.toString(), // todo use instants to format date
+                formatPrice(it.eur)
+            )
+        })
     }
 }
 

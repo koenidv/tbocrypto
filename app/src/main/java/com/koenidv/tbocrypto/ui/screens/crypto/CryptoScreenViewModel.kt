@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.koenidv.tbocrypto.data.Retrofit
+import com.koenidv.tbocrypto.data.SharedPrefsCache
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,15 +13,21 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 import java.time.Instant
+import javax.inject.Inject
 
-class CryptoScreenViewModel : ViewModel() {
+@HiltViewModel
+class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCache) : ViewModel() {
 
     private val api = Retrofit.api
 
     private val _uiState = MutableStateFlow(
         CryptoScreenUiState(
-            currentPrice = PriceState.Loading,
-            historicData = PriceState.Loading,
+            currentPrice = cache.getLastCurrentPrice()?.let {
+                PriceState.Success(it, Instant.ofEpochMilli(cache.getCurrentPriceTimestamp() ?: 0))
+            } ?: PriceState.Loading,
+            historicData = cache.getLastHistoricData()?.let {
+                PriceState.Success(it, Instant.ofEpochMilli(cache.getHistoricDataTimestamp() ?: 0))
+            } ?: PriceState.Loading,
             selectedCoinId = "bitcoin"
         )
     )
@@ -75,6 +83,7 @@ class CryptoScreenViewModel : ViewModel() {
                     _uiState.update { curr ->
                         curr.copy(currentPrice = PriceState.Success(it, Instant.now()))
                     }
+                    cache.updateCurrentPrice(it)
                 }
             } catch (unknownHostE: UnknownHostException) {
                 // User is most likely offline
@@ -128,6 +137,7 @@ class CryptoScreenViewModel : ViewModel() {
                 _uiState.update { curr ->
                     curr.copy(historicData = PriceState.Success(data, Instant.now()))
                 }
+                cache.updateHistoricData(data)
             } catch (unknownHostE: UnknownHostException) {
                 // User is most likely offline
                 // Last known data will not be shown

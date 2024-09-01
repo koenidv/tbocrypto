@@ -13,21 +13,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.koenidv.tbocrypto.R
 import com.koenidv.tbocrypto.data.CurrentPrice
+import com.koenidv.tbocrypto.data.HistoricalData
 import com.koenidv.tbocrypto.ui.components.LazyTable
 import com.koenidv.tbocrypto.util.formatPrice
 import com.koenidv.tbocrypto.util.formatTimestampDay
+import com.koenidv.tbocrypto.util.formatTimestampTime
 
 @Composable
 fun CryptoScreen(modifier: Modifier = Modifier) {
     val vm: CryptoScreenViewModel = viewModel()
     val state by vm.uiState.collectAsState()
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
         when (val priceState = state.currentPrice) {
-            is PriceState.Success -> CurrentCoinPrice(priceState.value)
+            is PriceState.Success -> CurrentCoinPrice(priceState)
             is PriceState.Loading -> LoadingIndicator()
             is PriceState.Error -> ErrorMessage(
                 priceState.message,
@@ -35,7 +41,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             )
         }
         when (val historicDataState = state.historicData) {
-            is PriceState.Success -> HistoricalCoinData(historicDataState.value.prices)
+            is PriceState.Success -> HistoricalCoinData(historicDataState)
             is PriceState.Loading -> LoadingIndicator()
             is PriceState.Error -> ErrorMessage(
                 historicDataState.message,
@@ -47,31 +53,46 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CurrentCoinPrice(price: CurrentPrice) {
+fun CurrentCoinPrice(priceState: PriceState.Success<CurrentPrice>) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            formatPrice(price.eur),
+            formatPrice(priceState.value.eur),
             style = MaterialTheme.typography.displayMedium
+        )
+        Text(
+            stringResource(R.string.last_updated, formatTimestampTime(priceState.value.timestamp)),
+        )
+        Text(
+            stringResource(
+                R.string.last_fetched,
+                formatTimestampTime(priceState.lastFetched.epochSecond)
+            ),
         )
     }
 }
 
 @Composable
-fun HistoricalCoinData(prices: List<CurrentPrice>) {
+fun HistoricalCoinData(priceState: PriceState.Success<HistoricalData>) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.Center
     ) {
-        LazyTable(prices.map {
+        LazyTable(priceState.value.prices.map {
             listOf(
                 formatTimestampDay(it.timestamp),
                 formatPrice(it.eur)
             )
         })
     }
+    Text(
+        stringResource(
+            R.string.last_fetched,
+            formatTimestampTime(priceState.lastFetched.epochSecond)
+        ),
+    )
 }
 
 @Composable

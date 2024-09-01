@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
+import java.time.Instant
 
 class CryptoScreenViewModel : ViewModel() {
 
@@ -47,7 +48,7 @@ class CryptoScreenViewModel : ViewModel() {
                     throw Exception("Could not find expected coinId key in map")
                 }.let {
                     _uiState.update { curr ->
-                        curr.copy(currentPrice = PriceState.Success(it))
+                        curr.copy(currentPrice = PriceState.Success(it, Instant.now()))
                     }
                 }
             } catch (unknownHostE: UnknownHostException) {
@@ -100,7 +101,7 @@ class CryptoScreenViewModel : ViewModel() {
                 // Also drop the last entry - it's a slightly outdated current value
                 data.prices = data.prices.dropLast(1).sortedByDescending { it.timestamp }
                 _uiState.update { curr ->
-                    curr.copy(historicData = PriceState.Success(data))
+                    curr.copy(historicData = PriceState.Success(data, Instant.now()))
                 }
             } catch (unknownHostE: UnknownHostException) {
                 // User is most likely offline

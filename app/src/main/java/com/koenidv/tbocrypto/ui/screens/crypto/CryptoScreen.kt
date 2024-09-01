@@ -18,6 +18,7 @@ import com.koenidv.tbocrypto.R
 import com.koenidv.tbocrypto.data.CurrentPrice
 import com.koenidv.tbocrypto.ui.components.LazyTable
 import com.koenidv.tbocrypto.util.formatPrice
+import com.koenidv.tbocrypto.util.formatTimestampDay
 
 @Composable
 fun CryptoScreen(modifier: Modifier = Modifier) {
@@ -34,7 +35,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             )
         }
         when (val historicDataState = state.historicData) {
-            is PriceState.Success -> HistoricalCoinData(historicDataState.value.prices.sortedBy { it.timestamp })
+            is PriceState.Success -> HistoricalCoinData(historicDataState.value.prices)
             is PriceState.Loading -> LoadingIndicator()
             is PriceState.Error -> ErrorMessage(
                 historicDataState.message,
@@ -66,7 +67,7 @@ fun HistoricalCoinData(prices: List<CurrentPrice>) {
     ) {
         LazyTable(prices.map {
             listOf(
-                it.timestamp.toString(), // todo use instants to format date
+                formatTimestampDay(it.timestamp),
                 formatPrice(it.eur)
             )
         })

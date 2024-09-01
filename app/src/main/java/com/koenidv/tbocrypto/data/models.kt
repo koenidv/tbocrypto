@@ -9,5 +9,5 @@ data class CurrentPrice(
 )
 
 data class HistoricalData(
-    val prices: List<CurrentPrice>
+    var prices: List<CurrentPrice>
 )

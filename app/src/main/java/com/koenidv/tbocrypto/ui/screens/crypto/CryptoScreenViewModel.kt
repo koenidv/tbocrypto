@@ -96,6 +96,9 @@ class CryptoScreenViewModel : ViewModel() {
                     curr.copy(historicData = PriceState.Loading)
                 }
                 val data = api.getHistoricData(coinId, days)
+                // Sort by newest date
+                // Also drop the last entry - it's a slightly outdated current value
+                data.prices = data.prices.dropLast(1).sortedByDescending { it.timestamp }
                 _uiState.update { curr ->
                     curr.copy(historicData = PriceState.Success(data))
                 }

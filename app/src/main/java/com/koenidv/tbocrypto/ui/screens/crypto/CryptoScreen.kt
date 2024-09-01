@@ -24,11 +24,19 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxWidth()) {
         when (val priceState = state.currentPrice) {
-            is CurrentPriceState.Success -> CurrentCoinPrice(priceState.price)
-            is CurrentPriceState.Loading -> LoadingIndicator()
-            is CurrentPriceState.Error -> ErrorMessage(
+            is PriceState.Success -> CurrentCoinPrice(priceState.value)
+            is PriceState.Loading -> LoadingIndicator()
+            is PriceState.Error -> ErrorMessage(
                 priceState.message,
                 if (priceState.retryAllowed) vm::fetchCurrentPrice else null
+            )
+        }
+        when (val historicDataState = state.historicData) {
+            is PriceState.Success -> HistoricalCoinData(historicDataState.value.prices)
+            is PriceState.Loading -> LoadingIndicator()
+            is PriceState.Error -> ErrorMessage(
+                historicDataState.message,
+                if (historicDataState.retryAllowed) vm::fetchHistoricData else null
             )
         }
     }
@@ -45,6 +53,16 @@ fun CurrentCoinPrice(price: CurrentPrice) {
             "%.2f".format(price.eur).trimEnd('0').trimEnd('.', ','),
             style = MaterialTheme.typography.displayMedium
         )
+    }
+}
+
+@Composable
+fun HistoricalCoinData(prices: List<CurrentPrice>) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(prices.toString())
     }
 }
 

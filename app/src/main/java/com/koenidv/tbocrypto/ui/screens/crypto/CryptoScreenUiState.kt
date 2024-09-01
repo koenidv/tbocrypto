@@ -1,14 +1,16 @@
 package com.koenidv.tbocrypto.ui.screens.crypto
 
 import com.koenidv.tbocrypto.data.CurrentPrice
+import com.koenidv.tbocrypto.data.HistoricalData
 
-sealed interface CurrentPriceState {
-    data object Loading : CurrentPriceState
-    data class Success(val price: CurrentPrice) : CurrentPriceState
-    data class Error(val message: String, val retryAllowed: Boolean) : CurrentPriceState
+sealed interface PriceState<out T> {
+    data object Loading : PriceState<Nothing>
+    data class Success<T>(val value: T) : PriceState<T>
+    data class Error(val message: String, val retryAllowed: Boolean) : PriceState<Nothing>
 }
 
 data class CryptoScreenUiState(
-    var currentPrice: CurrentPriceState,
     var selectedCoinId: String,
+    var currentPrice: PriceState<CurrentPrice>,
+    var historicData: PriceState<HistoricalData>
 )

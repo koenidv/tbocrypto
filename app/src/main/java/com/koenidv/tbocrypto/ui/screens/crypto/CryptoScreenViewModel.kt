@@ -17,7 +17,8 @@ class CryptoScreenViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(
         CryptoScreenUiState(
-            currentPrice = CurrentPriceState.Loading,
+            currentPrice = PriceState.Loading,
+            historicData = PriceState.Loading,
             selectedCoinId = "bitcoin"
         )
     )
@@ -40,13 +41,13 @@ class CryptoScreenViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 _uiState.update { curr ->
-                    curr.copy(currentPrice = CurrentPriceState.Loading)
+                    curr.copy(currentPrice = PriceState.Loading)
                 }
                 api.getCurrentPrice(coinId).getOrElse(coinId) {
                     throw Exception("Could not find expected coinId key in map")
                 }.let {
                     _uiState.update { curr ->
-                        curr.copy(currentPrice = CurrentPriceState.Success(it))
+                        curr.copy(currentPrice = PriceState.Success(it))
                     }
                 }
             } catch (unknownHostE: UnknownHostException) {
@@ -54,7 +55,7 @@ class CryptoScreenViewModel : ViewModel() {
                 // Last known data will not be shown
                 _uiState.update { curr ->
                     curr.copy(
-                        currentPrice = CurrentPriceState.Error(
+                        currentPrice = PriceState.Error(
                             "No internet connection",
                             true
                         )
@@ -64,7 +65,56 @@ class CryptoScreenViewModel : ViewModel() {
                 Log.e("CryptoScreenViewModel", "Error fetching current price: $e")
                 _uiState.update { curr ->
                     curr.copy(
-                        currentPrice = CurrentPriceState.Error(
+                        currentPrice = PriceState.Error(
+                            e.message ?: "Unknown error",
+                            false
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Fetches the historic price data of the currently selected coin
+     * side effect: updates the uiState
+     */
+    fun fetchHistoricData() {
+        fetchHistoricData(_uiState.value.selectedCoinId)
+    }
+
+    /**
+     * Fetches the historic price data of a coin by its id from coingecko
+     * side effect: updates the uiState
+     * @param coinId the id of the coin
+     * @param days the number of days to look back: default 14
+     */
+    private fun fetchHistoricData(coinId: String, days: Int = 14) {
+        viewModelScope.launch {
+            try {
+                _uiState.update { curr ->
+                    curr.copy(historicData = PriceState.Loading)
+                }
+                val data = api.getHistoricData(coinId, days)
+                _uiState.update { curr ->
+                    curr.copy(historicData = PriceState.Success(data))
+                }
+            } catch (unknownHostE: UnknownHostException) {
+                // User is most likely offline
+                // Last known data will not be shown
+                _uiState.update { curr ->
+                    curr.copy(
+                        historicData = PriceState.Error(
+                            "No internet connection",
+                            true
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("CryptoScreenViewModel", "Error fetching historic data: $e")
+                _uiState.update { curr ->
+                    curr.copy(
+                        historicData = PriceState.Error(
                             e.message ?: "Unknown error",
                             false
                         )
@@ -75,7 +125,8 @@ class CryptoScreenViewModel : ViewModel() {
     }
 
     init {
-        fetchCurrentPrice("bitcoin")
+        fetchCurrentPrice()
+        fetchHistoricData()
     }
 
 }

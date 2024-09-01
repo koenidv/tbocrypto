@@ -12,6 +12,7 @@ composeBom = "2024.04.01"
 retrofit = "2.9.0"
 retrofitGson = "2.9.0"
 retrofitInterceptor = "4.10.0"
+daggerHilt = "2.44"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -32,8 +33,11 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofitGson" }
 retrofit-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "retrofitInterceptor" }
+dagger-hilt = { module = "com.google.dagger:hilt-android", version.ref = "daggerHilt" }
+dagger-hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "daggerHilt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-
+kotlin-kapt = { id = "kotlin-kapt" }
+dagger-hilt = {id = "com.google.dagger.hilt.android", version.ref = "daggerHilt"}

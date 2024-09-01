@@ -33,37 +33,30 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
     )
     val uiState: StateFlow<CryptoScreenUiState> = _uiState.asStateFlow()
 
-    fun fetchAll(updateLoadingState: Boolean = true): Boolean {
-        var fetchedAnything = false
-        if (
-            _uiState.value.currentPrice !is PriceState.Error
-            || (_uiState.value.currentPrice as PriceState.Error).retryAllowed
-        ) {
-            fetchCurrentPrice(
-                _uiState.value.selectedCoinId,
-                updateLoadingState
+    /**
+     * Sets ui states to loading and fetches all data
+     */
+    fun handleRefreshClicked() {
+        _uiState.update { curr ->
+            curr.copy(
+                currentPrice = PriceState.Loading,
+                historicData = PriceState.Loading
             )
-            fetchedAnything = true
         }
-        if (
-            _uiState.value.historicData !is PriceState.Error
-            || (_uiState.value.historicData as PriceState.Error).retryAllowed
-        ) {
-            fetchHistoricData(
-                _uiState.value.selectedCoinId,
-                updateLoadingState = updateLoadingState
-            )
-            fetchedAnything = true
-        }
-        return fetchedAnything
+        fetchAll()
+    }
+
+    private fun fetchAll() {
+        fetchCurrentPrice()
+        fetchHistoricData()
     }
 
     /**
      * Fetches the price of the currently selected coin
      * side effect: updates the uiState
      */
-    fun fetchCurrentPrice() {
-        fetchCurrentPrice(_uiState.value.selectedCoinId, true)
+    private fun fetchCurrentPrice() {
+        fetchCurrentPrice(_uiState.value.selectedCoinId)
     }
 
     /**
@@ -71,12 +64,9 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
      * side effect: updates the uiState
      * @param coinId the id of the coin
      */
-    private fun fetchCurrentPrice(coinId: String, updateLoadingState: Boolean) {
+    private fun fetchCurrentPrice(coinId: String) {
         viewModelScope.launch {
             try {
-                if (updateLoadingState) _uiState.update { curr ->
-                    curr.copy(currentPrice = PriceState.Loading)
-                }
                 api.getCurrentPrice(coinId).getOrElse(coinId) {
                     throw Exception("Could not find expected coinId key in map")
                 }.let {
@@ -114,8 +104,8 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
      * Fetches the historic price data of the currently selected coin
      * side effect: updates the uiState
      */
-    fun fetchHistoricData() {
-        fetchHistoricData(_uiState.value.selectedCoinId, updateLoadingState = true)
+    private fun fetchHistoricData() {
+        fetchHistoricData(_uiState.value.selectedCoinId)
     }
 
     /**
@@ -124,12 +114,9 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
      * @param coinId the id of the coin
      * @param days the number of days to look back: default 14
      */
-    private fun fetchHistoricData(coinId: String, days: Int = 14, updateLoadingState: Boolean) {
+    private fun fetchHistoricData(coinId: String, days: Int = 14) {
         viewModelScope.launch {
             try {
-                if (updateLoadingState) _uiState.update { curr ->
-                    curr.copy(historicData = PriceState.Loading)
-                }
                 val data = api.getHistoricData(coinId, days)
                 // Sort by newest date
                 // Also drop the last entry - it's a slightly outdated current value
@@ -170,9 +157,8 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
 
     private fun startCoroutineTimer(delayMillis: Long = 60000) {
         viewModelScope.launch {
-            var fetchedAnythingLastRun = true
-            while (fetchedAnythingLastRun) {
-                fetchedAnythingLastRun = fetchAll(updateLoadingState = false)
+            while (true) { // bound to viewmodel lifecycle
+                fetchAll()
                 kotlinx.coroutines.delay(delayMillis)
             }
         }

@@ -37,7 +37,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             is PriceState.Loading -> LoadingIndicator()
             is PriceState.Error -> ErrorMessage(
                 priceState.message,
-                if (priceState.retryAllowed) vm::fetchCurrentPrice else null
+                if (priceState.retryAllowed) vm::handleRefreshClicked else null
             )
         }
         when (val historicDataState = state.historicData) {
@@ -45,7 +45,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             is PriceState.Loading -> LoadingIndicator()
             is PriceState.Error -> ErrorMessage(
                 historicDataState.message,
-                if (historicDataState.retryAllowed) vm::fetchHistoricData else null
+                if (historicDataState.retryAllowed) vm::handleRefreshClicked else null
             )
         }
     }

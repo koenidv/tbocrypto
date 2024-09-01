@@ -7,3 +7,7 @@ data class CurrentPrice(
     @SerializedName("last_updated_at")
     val timestamp: Long
 )
+
+data class HistoricalData(
+    val prices: List<CurrentPrice>
+)

@@ -1,5 +1,7 @@
 package com.koenidv.tbocrypto.data
 
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -16,8 +18,20 @@ object Retrofit {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(clientWithCoingeckoKey)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
+    }
+
+    /**
+     * Gson instance to handle Coingecko's historical data format
+     */
+    private val gson by lazy {
+        GsonBuilder()
+            .registerTypeAdapter(
+                object : TypeToken<HistoricalData>() {}.type,
+                HistoricalDataDeserializer()
+            )
+            .create()
     }
 
     /**

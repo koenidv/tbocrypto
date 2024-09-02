@@ -4,9 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.koenidv.tbocrypto.data.Coin
-import com.koenidv.tbocrypto.data.CurrentPrice
 import com.koenidv.tbocrypto.data.Retrofit
 import com.koenidv.tbocrypto.data.SharedPrefsCache
+import com.koenidv.tbocrypto.data.UserSettings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +18,10 @@ import java.time.Instant
 import javax.inject.Inject
 
 @HiltViewModel
-class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCache) : ViewModel() {
+class CryptoScreenViewModel @Inject constructor(
+    private val cache: SharedPrefsCache,
+    private val settings: UserSettings
+) : ViewModel() {
 
     private val api = Retrofit.api
 
@@ -27,12 +30,12 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
             currentPrice = retrieveCacheRequestState { cache.getLastCurrentPrice() },
             historicData = retrieveCacheRequestState { cache.getLastHistoricData() },
             coins = retrieveCacheRequestState { cache.getLastCoins() },
-            selectedCoin = Coin("bitcoin", "BTC", "Bitcoin")
+            selectedCoin = settings.getSelectedCoin() ?: Coin("bitcoin", "BTC", "Bitcoin")
         )
     )
     val uiState: StateFlow<CryptoScreenUiState> = _uiState.asStateFlow()
 
-    private fun <T>retrieveCacheRequestState(retrieveFn: () -> T?): RequestState<T> {
+    private fun <T> retrieveCacheRequestState(retrieveFn: () -> T?): RequestState<T> {
         return retrieveFn()?.let {
             RequestState.Success(
                 it,
@@ -66,6 +69,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                 historicData = RequestState.Loading
             )
         }
+        settings.setSelectedCoin(coin)
         fetchAll()
     }
 

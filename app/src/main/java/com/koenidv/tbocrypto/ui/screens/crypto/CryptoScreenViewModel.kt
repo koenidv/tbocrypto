@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.koenidv.tbocrypto.data.Coin
+import com.koenidv.tbocrypto.data.CurrentPrice
 import com.koenidv.tbocrypto.data.Retrofit
 import com.koenidv.tbocrypto.data.SharedPrefsCache
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,23 +24,22 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
 
     private val _uiState = MutableStateFlow(
         CryptoScreenUiState(
-            currentPrice = cache.getLastCurrentPrice()?.let {
-                RequestState.Success(
-                    it,
-                    Instant.ofEpochMilli(cache.getCurrentPriceTimestamp() ?: 0)
-                )
-            } ?: RequestState.Loading,
-            historicData = cache.getLastHistoricData()?.let {
-                RequestState.Success(
-                    it,
-                    Instant.ofEpochMilli(cache.getHistoricDataTimestamp() ?: 0)
-                )
-            } ?: RequestState.Loading,
-            coins = RequestState.Loading,
+            currentPrice = retrieveCacheRequestState { cache.getLastCurrentPrice() },
+            historicData = retrieveCacheRequestState { cache.getLastHistoricData() },
+            coins = retrieveCacheRequestState { cache.getLastCoins() },
             selectedCoin = Coin("bitcoin", "BTC", "Bitcoin")
         )
     )
     val uiState: StateFlow<CryptoScreenUiState> = _uiState.asStateFlow()
+
+    private fun <T>retrieveCacheRequestState(retrieveFn: () -> T?): RequestState<T> {
+        return retrieveFn()?.let {
+            RequestState.Success(
+                it,
+                Instant.ofEpochMilli(cache.getCurrentPriceTimestamp() ?: 0)
+            )
+        } ?: RequestState.Loading
+    }
 
     /**
      * Sets ui states to loading and fetches all data
@@ -168,6 +168,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                 _uiState.update { curr ->
                     curr.copy(coins = RequestState.Success(data, Instant.now()))
                 }
+                cache.updateCoins(data)
             },
             { message: String, retryAllowed: Boolean ->
                 _uiState.update { curr ->

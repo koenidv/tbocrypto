@@ -12,7 +12,7 @@ sealed interface RequestState<out T> {
 }
 
 data class CryptoScreenUiState(
-    var selectedCoinId: String,
+    var selectedCoin: Coin,
     var coins: RequestState<List<Coin>>,
     var currentPrice: RequestState<CurrentPrice>,
     var historicData: RequestState<HistoricalData>

@@ -3,7 +3,7 @@ package com.koenidv.tbocrypto.ui.screens.crypto
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.koenidv.tbocrypto.data.HistoricalData
+import com.koenidv.tbocrypto.data.Coin
 import com.koenidv.tbocrypto.data.Retrofit
 import com.koenidv.tbocrypto.data.SharedPrefsCache
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,7 +36,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                 )
             } ?: RequestState.Loading,
             coins = RequestState.Loading,
-            selectedCoinId = "bitcoin"
+            selectedCoin = Coin("bitcoin", "BTC", "Bitcoin")
         )
     )
     val uiState: StateFlow<CryptoScreenUiState> = _uiState.asStateFlow()
@@ -54,6 +54,21 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
         fetchAll()
     }
 
+    /**
+     * Updates the selected coin and fetches all data
+     * @param coin the new selected coin
+     */
+    fun handleCoinSelected(coin: Coin) {
+        _uiState.update { curr ->
+            curr.copy(
+                selectedCoin = coin,
+                currentPrice = RequestState.Loading,
+                historicData = RequestState.Loading
+            )
+        }
+        fetchAll()
+    }
+
     private fun fetchAll() {
         fetchCurrentPrice()
         fetchHistoricData()
@@ -64,7 +79,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
      * side effect: updates the uiState
      */
     private fun fetchCurrentPrice() {
-        fetchCurrentPrice(_uiState.value.selectedCoinId)
+        fetchCurrentPrice(_uiState.value.selectedCoin.id)
     }
 
     /**
@@ -103,7 +118,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
      * side effect: updates the uiState
      */
     private fun fetchHistoricData() {
-        fetchHistoricData(_uiState.value.selectedCoinId)
+        fetchHistoricData(_uiState.value.selectedCoin.id)
     }
 
     /**

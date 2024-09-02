@@ -23,11 +23,11 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
     private val _uiState = MutableStateFlow(
         CryptoScreenUiState(
             currentPrice = cache.getLastCurrentPrice()?.let {
-                PriceState.Success(it, Instant.ofEpochMilli(cache.getCurrentPriceTimestamp() ?: 0))
-            } ?: PriceState.Loading,
+                RequestState.Success(it, Instant.ofEpochMilli(cache.getCurrentPriceTimestamp() ?: 0))
+            } ?: RequestState.Loading,
             historicData = cache.getLastHistoricData()?.let {
-                PriceState.Success(it, Instant.ofEpochMilli(cache.getHistoricDataTimestamp() ?: 0))
-            } ?: PriceState.Loading,
+                RequestState.Success(it, Instant.ofEpochMilli(cache.getHistoricDataTimestamp() ?: 0))
+            } ?: RequestState.Loading,
             selectedCoinId = "bitcoin"
         )
     )
@@ -39,8 +39,8 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
     fun handleRefreshClicked() {
         _uiState.update { curr ->
             curr.copy(
-                currentPrice = PriceState.Loading,
-                historicData = PriceState.Loading
+                currentPrice = RequestState.Loading,
+                historicData = RequestState.Loading
             )
         }
         fetchAll()
@@ -71,7 +71,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                     throw Exception("Could not find expected coinId key in map")
                 }.let {
                     _uiState.update { curr ->
-                        curr.copy(currentPrice = PriceState.Success(it, Instant.now()))
+                        curr.copy(currentPrice = RequestState.Success(it, Instant.now()))
                     }
                     cache.updateCurrentPrice(it)
                 }
@@ -80,7 +80,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                 // Last known data will not be shown
                 _uiState.update { curr ->
                     curr.copy(
-                        currentPrice = PriceState.Error(
+                        currentPrice = RequestState.Error(
                             "No internet connection",
                             true
                         )
@@ -90,7 +90,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                 Log.e("CryptoScreenViewModel", "Error fetching current price: $e")
                 _uiState.update { curr ->
                     curr.copy(
-                        currentPrice = PriceState.Error(
+                        currentPrice = RequestState.Error(
                             e.message ?: "Unknown error",
                             false
                         )
@@ -122,7 +122,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                 // Also drop the last entry - it's a slightly outdated current value
                 data.prices = data.prices.dropLast(1).sortedByDescending { it.timestamp }
                 _uiState.update { curr ->
-                    curr.copy(historicData = PriceState.Success(data, Instant.now()))
+                    curr.copy(historicData = RequestState.Success(data, Instant.now()))
                 }
                 cache.updateHistoricData(data)
             } catch (unknownHostE: UnknownHostException) {
@@ -130,7 +130,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                 // Last known data will not be shown
                 _uiState.update { curr ->
                     curr.copy(
-                        historicData = PriceState.Error(
+                        historicData = RequestState.Error(
                             "No internet connection",
                             true
                         )
@@ -140,7 +140,39 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
                 Log.e("CryptoScreenViewModel", "Error fetching historic data: $e")
                 _uiState.update { curr ->
                     curr.copy(
-                        historicData = PriceState.Error(
+                        historicData = RequestState.Error(
+                            e.message ?: "Unknown error",
+                            false
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    private fun fetchCoins() {
+        viewModelScope.launch {
+            try {
+                val coinIds = api.getCoinIds()
+                _uiState.update { curr ->
+                    curr.copy(coins = RequestState.Success(coinIds, Instant.now()))
+                }
+            } catch (unknownHostE: UnknownHostException) {
+                // User is most likely offline
+                // Last known data will not be shown
+                _uiState.update { curr ->
+                    curr.copy(
+                        coins = RequestState.Error(
+                            "No internet connection",
+                            true
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("CryptoScreenViewModel", "Error fetching coin ids: $e")
+                _uiState.update { curr ->
+                    curr.copy(
+                        coins = RequestState.Error(
                             e.message ?: "Unknown error",
                             false
                         )
@@ -152,6 +184,7 @@ class CryptoScreenViewModel @Inject constructor(private val cache: SharedPrefsCa
 
     init {
         fetchAll()
+        fetchCoins()
         startCoroutineTimer()
     }
 

@@ -11,3 +11,9 @@ data class CurrentPrice(
 data class HistoricalData(
     var prices: List<CurrentPrice>
 )
+
+data class Coin(
+    val id: String,
+    val symbol: String,
+    val name: String,
+)

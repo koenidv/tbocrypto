@@ -85,5 +85,5 @@ private fun List<Coin>.filterByQuery(query: String, minQueryLength: Int): List<C
             query,
             ignoreCase = true
         )
-    }
+    }.sortedByDescending { query.length / it.name.length } // more of the query matches the name
 }

@@ -34,28 +34,30 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        when (val priceState = state.currentPrice) {
-            is PriceState.Success -> CurrentCoinPrice(priceState)
-            is PriceState.Loading -> LoadingIndicator()
-            is PriceState.Error -> ErrorMessage(
-                priceState.message,
-                if (priceState.retryAllowed) vm::handleRefreshClicked else null
-            )
+        RemoteData(state.currentPrice, vm::handleRefreshClicked) {
+            CurrentCoinPrice(it)
         }
-        when (val historicDataState = state.historicData) {
-            is PriceState.Success -> HistoricalCoinData(historicDataState)
-            is PriceState.Loading -> LoadingIndicator()
-            is PriceState.Error -> ErrorMessage(
-                historicDataState.message,
-                if (historicDataState.retryAllowed) vm::handleRefreshClicked else null
-            )
+        RemoteData(state.historicData, vm::handleRefreshClicked) {
+            HistoricalCoinData(it)
         }
     }
 
 }
 
 @Composable
-fun CurrentCoinPrice(priceState: PriceState.Success<CurrentPrice>) {
+fun <T>RemoteData(state: RequestState<T>, handleRefresh: () -> Unit, composable: @Composable (RequestState.Success<T>) -> Unit) {
+    when (state) {
+        is RequestState.Success -> composable(state)
+        is RequestState.Loading -> LoadingIndicator()
+        is RequestState.Error -> ErrorMessage(
+            state.message,
+            if (state.retryAllowed) handleRefresh else null
+        )
+    }
+}
+
+@Composable
+fun CurrentCoinPrice(priceState: RequestState.Success<CurrentPrice>) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.Center
@@ -77,7 +79,7 @@ fun CurrentCoinPrice(priceState: PriceState.Success<CurrentPrice>) {
 }
 
 @Composable
-fun HistoricalCoinData(priceState: PriceState.Success<HistoricalData>) {
+fun HistoricalCoinData(priceState: RequestState.Success<HistoricalData>) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.Center

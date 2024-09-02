@@ -79,6 +79,7 @@ dependencies {
     implementation(libs.retrofit.interceptor)
     implementation(libs.dagger.hilt)
     kapt(libs.dagger.hilt.compiler)
+    testImplementation(libs.okhttp.mockwebserver)
 }
 
 kapt {

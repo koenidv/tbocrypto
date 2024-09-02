@@ -27,5 +27,6 @@ interface CoingeckoInterface {
         @Query("interval") interval: String = "daily"
     ): HistoricalData
 
-    // todo coin ids
+    @GET("coins/list")
+    suspend fun getCoinIds(): List<Coin>
 }

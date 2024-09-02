@@ -4,23 +4,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.koenidv.tbocrypto.R
 import com.koenidv.tbocrypto.data.CurrentPrice
 import com.koenidv.tbocrypto.data.HistoricalData
+import com.koenidv.tbocrypto.ui.components.ErrorMessage
 import com.koenidv.tbocrypto.ui.components.LazyTable
+import com.koenidv.tbocrypto.ui.components.LoadingIndicator
 import com.koenidv.tbocrypto.util.formatPrice
 import com.koenidv.tbocrypto.util.formatTimestampDay
 import com.koenidv.tbocrypto.util.formatTimestampTime
@@ -97,37 +95,4 @@ fun HistoricalCoinData(priceState: PriceState.Success<HistoricalData>) {
             formatTimestampTime(priceState.lastFetched.epochSecond)
         ),
     )
-}
-
-@Composable
-fun LoadingIndicator() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.Center
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-fun ErrorMessage(message: String, retryAction: (() -> Unit)? = null) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            message,
-            color = MaterialTheme.colorScheme.error
-        )
-        retryAction?.let { action ->
-            TextButton(action) {
-                Text(stringResource(R.string.action_retry))
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
-fun CryptoScreenPreview() {
-    CryptoScreen()
 }
